@@ -1,0 +1,24 @@
+{
+    "name": "xlient/xml-sitemap",
+    "description": "An XML sitemap iterator that lets you traverse all urls in a sitemap.",
+    "type": "library",
+    "keywords": [
+        "xlient",
+        "sitemap",
+        "iterator"
+    ],
+    "homepage": "https://xlient.com",
+    "license": "Unlicense",
+    "require": {
+        "php": ">=8.0.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Xlient\\Xml\\Sitemap\\": "src/"
+        }
+    },
+    "support": {
+        "issues": "https://github.com/xlientrc/xlient-xml-sitemap/issues",
+        "source": "https://github.com/xlientrc/xlient-xml-sitemap"
+    }
+}
