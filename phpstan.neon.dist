@@ -1,0 +1,7 @@
+parameters:
+    level: max
+    checkGenericClassInNonGenericObjectType: false
+    paths:
+        - src
+    ignoreErrors:
+        - '#^Access to an undefined property XMLReader::#'

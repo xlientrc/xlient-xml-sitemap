@@ -19,7 +19,13 @@ class SitemapIterator implements Iterator
     private string $uri;
 
     /**
-     * @var array An array of options.
+     * @var array{
+     *     modified_date_time: null|string|DateTimeInterface,
+     *     minimum_priority: null|float,
+     *     encoding: null|string,
+     * }
+     *
+     * An array of options.
      */
     private array $options;
 
@@ -44,7 +50,7 @@ class SitemapIterator implements Iterator
     private ?string $currentUrl = null;
 
     /**
-     * @var array|null The current sitemap url data.
+     * @var array<string, mixed>|null The current sitemap url data.
      */
     private ?array $currentData = null;
 
@@ -65,8 +71,8 @@ class SitemapIterator implements Iterator
      * - `encoding`             - Specify the encoding of the sitemap
      *
      * @param string $uri A uri pointing to a sitemap.
-     * @param array $options An array of options.
-     * @return bool Returns true on success or false on failure.
+     * @param array{modified_date_time?: null|string|DateTimeInterface, minimum_priority?: null|float, encoding?: null|string} $options An array of options.
+     * @return bool True on success or false on failure.
      */
     public function open(string $uri, array $options = []): bool
     {
@@ -91,7 +97,7 @@ class SitemapIterator implements Iterator
                 $dateTime = new DateTime($dateTime);
             }
 
-            $dateTime->setTimezone(new DateTimeZone(DateTimeZone::UTC));
+            $dateTime->setTimezone(new DateTimeZone('UTC'));
             $dateTime = $dateTime->format('Y-m-d H:i:s');
 
             $this->options['modified_date_time'] = $dateTime;
@@ -168,7 +174,7 @@ class SitemapIterator implements Iterator
      * Opens the specified uri in an XmlReader and pushes to the stack.
      *
      * @param string $uri The uri of the sitemap to open.
-     * @return bool Returns true on success or false on failure.
+     * @return bool True on success or false on failure.
      */
     private function openXmlReader(string $uri): bool
     {
@@ -192,10 +198,11 @@ class SitemapIterator implements Iterator
 
         return true;
     }
+
     /**
      * Closes the last opened XmlReader and pops it off the stack.
      *
-     * @return bool Returns true on success or false on failure.
+     * @return bool True on success or false on failure.
      */
     private function closeXmlReader(): bool
     {
@@ -297,6 +304,11 @@ class SitemapIterator implements Iterator
                 $xml->nodeType === XmlReader::ELEMENT
             ) {
                 $url = $this->readElementValue($xml);
+
+                if (is_array($url)) {
+                    throw new InvalidSitemapException('Element is invalid. (loc)');
+                }
+
                 continue;
             }
 
@@ -304,6 +316,10 @@ class SitemapIterator implements Iterator
                 $xml->nodeType === XmlReader::ELEMENT
             ) {
                 $lastmod = $this->readElementValue($xml);
+
+                if (is_array($lastmod)) {
+                    throw new InvalidSitemapException('Element is invalid. (lastmod)');
+                }
             }
 
             // Skip over any other elements contained in the sitemap element
@@ -324,8 +340,7 @@ class SitemapIterator implements Iterator
      * and array of child values.
      *
      * @param XmlReader $xml The XmlReader to read the url element from.
-     * @return bool Returns true if the key value pair is updated,
-     * otherwise false.
+     * @return bool True if the key value pair is updated, otherwise false.
      */
     private function readUrl(XmlReader $xml): bool
     {
@@ -353,6 +368,10 @@ class SitemapIterator implements Iterator
                 $xml->nodeType === XmlReader::ELEMENT
             ) {
                 $url = $this->readElementValue($xml);
+
+                if (is_array($url)) {
+                    throw new InvalidSitemapException('Element is invalid. (loc)');
+                }
                 continue;
             }
 
@@ -360,6 +379,11 @@ class SitemapIterator implements Iterator
                 $xml->nodeType === XmlReader::ELEMENT
             ) {
                 $lastmod = $this->readElementValue($xml);
+
+                if (is_array($lastmod)) {
+                    throw new InvalidSitemapException('Element is invalid. (lastmod)');
+                }
+
                 continue;
             }
 
@@ -382,7 +406,7 @@ class SitemapIterator implements Iterator
         }
 
         if ($url === null ||
-            $this->skipPriority($lastmod) ||
+            $this->skipPriority($priority) ||
             $this->skipLastmod($lastmod)
         ) {
             return false;
@@ -403,6 +427,8 @@ class SitemapIterator implements Iterator
         }
 
         $this->currentUrl = $url;
+
+        // @phpstan-ignore-next-line
         $this->currentData = $data;
 
         return true;
@@ -412,7 +438,7 @@ class SitemapIterator implements Iterator
      * Read an element and its subtrees into an value.
      *
      * @param XmlReader $xml The XmlReader to read the value from.
-     * @return string|array|null Returns teh resulting read value.
+     * @return string|array<string, mixed>|null The resulting read value.
      */
     private function readElementValue(XmlReader $xml): string|array|null
     {
@@ -448,6 +474,7 @@ class SitemapIterator implements Iterator
         }
 
         if ($data) {
+            // @phpstan-ignore-next-line
             return $data;
         }
 
@@ -458,9 +485,9 @@ class SitemapIterator implements Iterator
      * Determine whether or not the url with the specified priority should
      * be skipped.
      *
-     * @return Returns true if the url should be skipped, otherwise false.
+     * @return bool True if the url should be skipped, otherwise false.
      */
-    private function skipPriority($priority): bool
+    private function skipPriority(?float $priority): bool
     {
         if ($priority === null) {
             return false;
@@ -479,9 +506,9 @@ class SitemapIterator implements Iterator
     /**
      * Determines if the element with the specified lastmod should be skipped.
      *
-     * @return Returns true if the element should be skipped, otherwise false.
+     * @return bool True if the element should be skipped, otherwise false.
      */
-    private function skipLastmod($lastmod): bool
+    private function skipLastmod(?string $lastmod): bool
     {
         if ($lastmod === null) {
             return false;
@@ -492,7 +519,7 @@ class SitemapIterator implements Iterator
         }
 
         $date = new Datetime($lastmod);
-        $date->setTimezone(new DateTimeZone(DateTimeZone::UTC));
+        $date->setTimezone(new DateTimeZone('UTC'));
 
         if ($date->format('Y-m-d H:i:s') <= $this->options['modified_date_time']) {
             return false;

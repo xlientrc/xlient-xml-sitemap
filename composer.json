@@ -17,8 +17,16 @@
             "Xlient\\Xml\\Sitemap\\": "src/"
         }
     },
+    "require-dev": {
+        "phpstan/phpstan": "^1.10"
+    },
     "support": {
         "issues": "https://github.com/xlientrc/xlient-xml-sitemap/issues",
         "source": "https://github.com/xlientrc/xlient-xml-sitemap"
+    },
+    "extra" : {
+        "branch-alias" : {
+            "dev-main" : "1.0-dev"
+        }
     }
 }
